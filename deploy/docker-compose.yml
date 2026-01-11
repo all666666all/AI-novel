@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: deploy/Dockerfile
     image: arboris-app:local
     container_name: arboris-app
     ports:
