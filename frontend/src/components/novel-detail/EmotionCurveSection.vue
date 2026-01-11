@@ -264,7 +264,14 @@ const fetchEmotionData = async (useAI = false) => {
     await nextTick()
     initChart()
   } catch (e: any) {
-    error.value = e.message || '加载失败'
+    console.error('情感曲线加载错误:', e)
+    if (e instanceof Error) {
+      error.value = e.message
+    } else if (typeof e === 'string') {
+      error.value = e
+    } else {
+      error.value = '加载失败，请稍后重试'
+    }
   } finally {
     isLoading.value = false
   }
