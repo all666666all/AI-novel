@@ -419,6 +419,10 @@ const initChart = () => {
   });
 };
 
+const useAIAnalysis = () => {
+  fetchEmotionData(true);
+};
+
 const refreshData = () => {
   fetchEmotionData();
 };
