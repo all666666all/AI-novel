@@ -1,3 +1,4 @@
+<!-- AIMETA P=工作区入口_应用主入口|R=入口导航|NR=不含具体功能|E=route:/#component:WorkspaceEntry|X=ui|A=入口页|D=vue|S=dom|RD=./README.ai -->
 <template>
   <div class="flex items-center justify-center min-h-screen p-4 relative md-surface-dim">
     <!-- Material 3 Update Log Modal -->

@@ -1,3 +1,4 @@
+<!-- AIMETA P=增强章节工作区_增强版编辑界面|R=增强编辑功能|NR=不含基础功能|E=component:ChapterWorkspaceEnhanced|X=internal|A=增强工作区|D=vue|S=dom,net|RD=./README.ai -->
 <template>
   <div class="bg-white rounded-lg shadow-sm p-6">
     <!-- 章节头部 -->

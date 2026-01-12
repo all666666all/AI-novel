@@ -1,3 +1,4 @@
+# AIMETA P=Celery配置_异步任务队列设置|R=Celery应用_任务路由_序列化|NR=不含任务定义|E=celery_app|X=job|A=Celery实例|D=celery,redis|S=net|RD=./README.ai
 import os
 from celery import Celery
 from kombu import Exchange, Queue

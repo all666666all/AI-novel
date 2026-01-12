@@ -1,3 +1,4 @@
+# AIMETA P=优化提示模板_系统规约和生成模板|R=系统消息_章节生成_大纲生成|NR=不含模型调用|E=SYSTEM_MESSAGE_NOVELIST_generate_chapter_prompt|X=internal|A=模板函数|D=none|S=none|RD=./README.ai
 """
 优化的小说生成 Prompt 模板系统
 实现 5 大优化：

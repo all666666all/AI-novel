@@ -1,3 +1,4 @@
+<!-- AIMETA P=蓝图编辑_蓝图编辑弹窗|R=蓝图编辑表单|NR=不含展示功能|E=component:BlueprintEditModal|X=internal|A=编辑弹窗|D=vue|S=dom|RD=./README.ai -->
 <template>
   <transition
     enter-active-class="transition-opacity duration-200"

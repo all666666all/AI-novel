@@ -1,3 +1,4 @@
+<!-- AIMETA P=项目卡片_小说项目展示|R=项目信息卡片|NR=不含编辑功能|E=component:ProjectCard|X=internal|A=卡片组件|D=vue|S=dom|RD=./README.ai -->
 <template>
   <div
     class="md-card md-card-elevated group p-5 flex flex-col justify-between transition-all duration-300 hover:scale-[1.01]"

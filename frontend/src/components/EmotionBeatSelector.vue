@@ -1,3 +1,4 @@
+<!-- AIMETA P=情感节拍选择_情感标记选择|R=情感选择|NR=不含分析功能|E=component:EmotionBeatSelector|X=internal|A=选择器|D=vue|S=dom|RD=./README.ai -->
 <template>
   <div class="emotion-beat-selector">
     <!-- 标题和开关 -->

@@ -1,3 +1,4 @@
+/* AIMETA P=主CSS_全局样式和Tailwind导入|R=全局样式_Tailwind|NR=不含组件样式|E=-|X=internal|A=全局样式|D=tailwindcss|S=dom|RD=./README.ai */
 @import "tailwindcss";
 /* Google Fonts - Roboto */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap');

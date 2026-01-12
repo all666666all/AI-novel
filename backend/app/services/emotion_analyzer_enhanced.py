@@ -1,3 +1,4 @@
+# AIMETA P=增强情感分析_多维情感识别|R=8种情感_叙事阶段_转折点|NR=不含基础分析|E=EmotionAnalyzerEnhanced|X=internal|A=分析器类|D=none|S=none|RD=./README.ai
 """
 多维情感分析增强模块
 扩展原有的单维情感分析，增加多个维度的情感识别和分析

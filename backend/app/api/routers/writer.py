@@ -1,3 +1,4 @@
+# AIMETA P=写作API_章节生成和大纲创建|R=章节生成_大纲生成_评审|NR=不含数据存储|E=route:POST_/api/writer/*|X=http|A=生成_评审|D=fastapi,openai|S=net,db|RD=./README.ai
 import json
 import logging
 import os
