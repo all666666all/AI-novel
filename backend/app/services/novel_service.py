@@ -414,7 +414,7 @@ class NovelService:
             version = ChapterVersion(
                 chapter_id=chapter.id,
                 content=text_content,
-                metadata=None,
+                metadata=extra,
                 version_label=f"v{index+1}",
             )
             self.session.add(version)
