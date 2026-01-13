@@ -283,13 +283,21 @@ async def generate_chapter(
 
 async def _resolve_version_count(session: AsyncSession) -> int:
     repo = SystemConfigRepository(session)
-    record = await repo.get_by_key("writer.version_count")
+    record = await repo.get_by_key("writer.chapter_versions")
     if record and record.value:
         try:
             return int(record.value)
         except ValueError:
             pass
-    return int(os.getenv("WRITER_VERSION_COUNT", "3"))
+    for env_key in ("WRITER_CHAPTER_VERSION_COUNT", "WRITER_CHAPTER_VERSIONS"):
+        value = os.getenv(env_key)
+        if not value:
+            continue
+        try:
+            return int(value)
+        except ValueError:
+            break
+    return settings.writer_chapter_versions
 
 
 @router.post("/novels/{project_id}/chapters/select", response_model=NovelProjectSchema)
