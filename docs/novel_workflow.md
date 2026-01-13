@@ -139,7 +139,7 @@
 | `EMBEDDING_MODEL` / `OLLAMA_EMBEDDING_MODEL` | 具体嵌入模型名 | `.env` |
 | `VECTOR_DB_URL` | libsql 数据库地址（支持 `file:`） | `.env` |
 | `VECTOR_TOP_K_CHUNKS` / `VECTOR_TOP_K_SUMMARIES` | 检索数量 | `.env` / 系统配置 |
-| `WRITER_CHAPTER_VERSION_COUNT` | 章节候选版本数 | 系统配置 / 环境变量 |
+| `WRITER_CHAPTER_VERSION_COUNT` | 章节候选版本数（系统配置键：`writer.chapter_versions`） | 系统配置 / 环境变量 |
 
 确保在部署环境中提前安装新依赖：
 
@@ -150,4 +150,3 @@ pip install -r backend/requirements.txt
 ---
 
 如需进一步开发，请配合此文档查看对应模块的实现文件（`backend/app/services/*`、`backend/app/api/routers/*`、`backend/prompts/*`），保持提示词与代码逻辑的一致性。
-
