@@ -303,6 +303,9 @@ class NovelService:
                     chapter_number=outline.chapter_number,
                     title=outline.title,
                     summary=outline.summary,
+                    narrative_phase=outline.narrative_phase,
+                    foreshadowing=outline.foreshadowing,
+                    emotion_hook=outline.emotion_hook,
                 )
             )
 
@@ -367,6 +370,9 @@ class NovelService:
                         chapter_number=outline.get("chapter_number"),
                         title=outline.get("title", ""),
                         summary=outline.get("summary"),
+                        narrative_phase=outline.get("narrative_phase"),
+                        foreshadowing=outline.get("foreshadowing"),
+                        emotion_hook=outline.get("emotion_hook"),
                     )
                 )
         await self.session.commit()
@@ -581,6 +587,9 @@ class NovelService:
                         chapter_number=outline.chapter_number,
                         title=outline.title,
                         summary=outline.summary or "",
+                        narrative_phase=outline.narrative_phase,
+                        foreshadowing=outline.foreshadowing,
+                        emotion_hook=outline.emotion_hook,
                     )
                     for outline in sorted(project.outlines, key=lambda o: o.chapter_number)
                 ],
@@ -706,6 +715,9 @@ class NovelService:
             chapter_number=chapter_number,
             title=title,
             summary=summary,
+            narrative_phase=outline.narrative_phase if outline else None,
+            foreshadowing=outline.foreshadowing if outline else None,
+            emotion_hook=outline.emotion_hook if outline else None,
             real_summary=real_summary,
             content=content,
             versions=versions,

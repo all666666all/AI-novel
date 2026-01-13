@@ -180,6 +180,24 @@ async def generate_chapter(
     rag_chunks_text = "\n\n".join(rag_context.chunk_texts()) if rag_context.chunks else "未检索到章节片段"
     rag_summaries_text = "\n".join(rag_context.summary_lines()) if rag_context.summaries else "未检索到章节摘要"
     writing_notes = request.writing_notes or "无额外写作指令"
+    narrative_phase = outline.narrative_phase or ""
+    foreshadowing = outline.foreshadowing or {}
+    emotion_hook = outline.emotion_hook or ""
+    phase_requirement = "本章仅完成该阶段，不提前解决后续冲突。"
+    foreshadowing_text = json.dumps(foreshadowing, ensure_ascii=False, indent=2) if foreshadowing else ""
+
+    chapter_goal_lines = [
+        f"标题：{outline_title}",
+        f"摘要：{outline_summary}",
+        f"写作要求：{writing_notes}",
+    ]
+    if narrative_phase:
+        chapter_goal_lines.append(f"叙事阶段：{narrative_phase}")
+        chapter_goal_lines.append(f"阶段要求：{phase_requirement}")
+    if foreshadowing_text:
+        chapter_goal_lines.append(f"伏笔安排：{foreshadowing_text}")
+    if emotion_hook:
+        chapter_goal_lines.append(f"情感钩子：{emotion_hook}")
 
     prompt_sections = [
         ("[世界蓝图](JSON)", blueprint_text),
@@ -190,7 +208,7 @@ async def generate_chapter(
         ("[检索到的章节摘要](Markdown)", rag_summaries_text),
         (
             "[当前章节目标]",
-            f"标题：{outline_title}\n摘要：{outline_summary}\n写作要求：{writing_notes}",
+            "\n".join(chapter_goal_lines),
         ),
     ]
     prompt_input = "\n\n".join(f"{title}\n{content}" for title, content in prompt_sections if content)
