@@ -2,7 +2,7 @@
 import json
 import logging
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import select
@@ -35,6 +35,36 @@ from ...repositories.system_config_repository import SystemConfigRepository
 router = APIRouter(prefix="/api/writer", tags=["Writer"])
 logger = logging.getLogger(__name__)
 
+_OPTIMIZE_DIMENSION_PROMPTS = {
+    "dialogue": "optimize_dialogue",
+    "environment": "optimize_environment",
+    "psychology": "optimize_psychology",
+    "rhythm": "optimize_rhythm",
+}
+
+_DEFAULT_EVALUATION_PROMPT = """你是一名资深小说编辑，请从内容结构、人物表现、语言节奏等方面指出改进建议。
+请输出可执行的修改意见，保持简洁明确。"""
+
+_DEFAULT_REWRITE_PROMPT = """你是一名小说编辑，请根据评估反馈对章节进行一次完整改写。
+
+输入格式：
+```json
+{
+  "original_content": "需要改写的章节内容",
+  "evaluation_feedback": "评估反馈",
+  "additional_notes": "额外要求"
+}
+```
+
+输出格式：
+```json
+{
+  "optimized_content": "改写后的完整章节内容",
+  "optimization_notes": "改写说明"
+}
+```
+"""
+
 
 async def _load_project_schema(service: NovelService, project_id: str, user_id: int) -> NovelProjectSchema:
     return await service.get_project_schema(project_id, user_id)
@@ -48,6 +78,150 @@ def _extract_tail_excerpt(text: Optional[str], limit: int = 500) -> str:
     if len(stripped) <= limit:
         return stripped
     return stripped[-limit:]
+
+
+def _coerce_bool(value: Optional[str]) -> bool:
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "on", "enabled"}
+
+
+async def _resolve_auto_optimize_enabled(session: AsyncSession) -> bool:
+    repo = SystemConfigRepository(session)
+    record = await repo.get_by_key("writer.enable_auto_optimize")
+    if record and record.value is not None:
+        return _coerce_bool(record.value)
+    return _coerce_bool(os.getenv("WRITER_ENABLE_AUTO_OPTIMIZE", "false"))
+
+
+def _extract_variant_content(variant: Any) -> str:
+    if isinstance(variant, dict):
+        for key in (
+            "content",
+            "chapter_content",
+            "chapter_text",
+            "full_content",
+            "text",
+            "body",
+            "story",
+            "chapter",
+        ):
+            if key in variant and isinstance(variant[key], str) and variant[key].strip():
+                return variant[key]
+        return json.dumps(variant, ensure_ascii=False)
+    if isinstance(variant, str):
+        return variant
+    return str(variant)
+
+
+def _parse_optimization_response(raw_response: str) -> Tuple[str, str]:
+    cleaned = remove_think_tags(raw_response)
+    normalized = unwrap_markdown_json(cleaned)
+    try:
+        result = json.loads(normalized)
+    except json.JSONDecodeError:
+        return cleaned, "优化完成（响应格式非标准JSON）"
+    if isinstance(result, dict):
+        content = result.get("optimized_content") or result.get("content") or result.get("chapter_content")
+        notes = result.get("optimization_notes") or result.get("notes") or "优化完成"
+        return (content or cleaned), notes
+    return cleaned, "优化完成（响应格式非标准JSON）"
+
+
+async def _run_auto_optimize_chain(
+    *,
+    content: str,
+    writing_notes: Optional[str],
+    project: NovelProjectSchema,
+    prompt_service: PromptService,
+    llm_service: LLMService,
+    user_id: int,
+) -> Tuple[str, Dict[str, Any]]:
+    current_content = content
+    chain_steps: List[Dict[str, Any]] = []
+    evaluation_feedback = ""
+
+    character_dna: Dict[str, str] = {}
+    if project.blueprint:
+        for char in project.blueprint.characters:
+            if "extra" in char and "dna_profile" in char.get("extra", {}):
+                character_dna[char.get("name", "")] = char["extra"]["dna_profile"]
+
+    for dimension, prompt_name in _OPTIMIZE_DIMENSION_PROMPTS.items():
+        optimizer_prompt = await prompt_service.get_prompt(prompt_name)
+        if not optimizer_prompt:
+            raise HTTPException(
+                status_code=500,
+                detail=f"缺少{dimension}优化提示词，请联系管理员配置 '{prompt_name}' 提示词",
+            )
+
+        optimize_input: Dict[str, Any] = {
+            "original_content": current_content,
+            "additional_notes": writing_notes or "无额外指令",
+        }
+        if dimension == "psychology" and character_dna:
+            optimize_input["character_dna"] = character_dna
+
+        response = await llm_service.get_llm_response(
+            system_prompt=optimizer_prompt,
+            conversation_history=[{"role": "user", "content": json.dumps(optimize_input, ensure_ascii=False)}],
+            temperature=0.7,
+            user_id=user_id,
+            timeout=600.0,
+        )
+
+        optimized_content, optimization_notes = _parse_optimization_response(response)
+        chain_steps.append(
+            {
+                "dimension": dimension,
+                "prompt_name": prompt_name,
+                "input": optimize_input,
+                "output": {
+                    "optimized_content": optimized_content,
+                    "optimization_notes": optimization_notes,
+                },
+            }
+        )
+        current_content = optimized_content
+
+    eval_prompt = await prompt_service.get_prompt("evaluation") or _DEFAULT_EVALUATION_PROMPT
+    evaluation_raw = await llm_service.get_llm_response(
+        system_prompt=eval_prompt,
+        conversation_history=[{"role": "user", "content": current_content}],
+        temperature=0.3,
+        user_id=user_id,
+        timeout=300.0,
+    )
+    evaluation_feedback = remove_think_tags(evaluation_raw)
+
+    rewrite_prompt = await prompt_service.get_prompt("rewrite_by_evaluation") or _DEFAULT_REWRITE_PROMPT
+    rewrite_input = {
+        "original_content": current_content,
+        "evaluation_feedback": evaluation_feedback,
+        "additional_notes": writing_notes or "无额外指令",
+    }
+    rewrite_response = await llm_service.get_llm_response(
+        system_prompt=rewrite_prompt,
+        conversation_history=[{"role": "user", "content": json.dumps(rewrite_input, ensure_ascii=False)}],
+        temperature=0.6,
+        user_id=user_id,
+        timeout=600.0,
+    )
+    rewrite_content, rewrite_notes = _parse_optimization_response(rewrite_response)
+
+    chain_metadata = {
+        "input_content": content,
+        "steps": chain_steps,
+        "evaluation_feedback": evaluation_feedback,
+        "rewrite": {
+            "input": rewrite_input,
+            "output": {
+                "optimized_content": rewrite_content,
+                "optimization_notes": rewrite_notes,
+            },
+        },
+    }
+    return rewrite_content, chain_metadata
 
 
 @router.post("/novels/{project_id}/chapters/generate", response_model=NovelProjectSchema)
@@ -256,20 +430,29 @@ async def generate_chapter(
             detail=f"生成章节失败: {str(exc)[:200]}"
         )
 
+    auto_optimize_enabled = await _resolve_auto_optimize_enabled(session)
     contents: List[str] = []
     metadata: List[Dict] = []
     for variant in raw_versions:
-        if isinstance(variant, dict):
-            if "content" in variant and isinstance(variant["content"], str):
-                contents.append(variant["content"])
-            elif "chapter_content" in variant:
-                contents.append(str(variant["chapter_content"]))
-            else:
-                contents.append(json.dumps(variant, ensure_ascii=False))
-            metadata.append(variant)
+        base_metadata = variant if isinstance(variant, dict) else {"raw": variant}
+        version_content = _extract_variant_content(variant)
+        if auto_optimize_enabled:
+            optimized_content, chain_metadata = await _run_auto_optimize_chain(
+                content=version_content,
+                writing_notes=request.writing_notes,
+                project=project_schema,
+                prompt_service=prompt_service,
+                llm_service=llm_service,
+                user_id=current_user.id,
+            )
+            contents.append(optimized_content)
+            base_metadata = {
+                **base_metadata,
+                "optimization_chain": chain_metadata,
+            }
         else:
-            contents.append(str(variant))
-            metadata.append({"raw": variant})
+            contents.append(version_content)
+        metadata.append(base_metadata)
 
     await novel_service.replace_chapter_versions(chapter, contents, metadata)
     logger.info(
