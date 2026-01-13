@@ -32,9 +32,24 @@ class Foreshadowing(Base):
     keywords: Mapped[Optional[list]] = mapped_column(JSON, default=list)
     
     # 伏笔状态
-    status: Mapped[str] = mapped_column(String(32), default="open", index=True)  # open, resolved, abandoned
+    status: Mapped[str] = mapped_column(String(32), default="planted", index=True)  # planted, developing, revealed, abandoned, partial
     resolved_chapter_id: Mapped[Optional[int]] = mapped_column(ForeignKey("chapters.id", ondelete="SET NULL"))
     resolved_chapter_number: Mapped[Optional[int]] = mapped_column(Integer)
+    
+    # 伏笔计划
+    name: Mapped[Optional[str]] = mapped_column(String(255))  # 伏笔名称/标识
+    target_reveal_chapter: Mapped[Optional[int]] = mapped_column(Integer)  # 计划揭示的章节
+    reveal_method: Mapped[Optional[str]] = mapped_column(Text)  # 计划的揭示方式
+    reveal_impact: Mapped[Optional[str]] = mapped_column(Text)  # 揭示后的影响
+    
+    # 关联信息
+    related_characters: Mapped[Optional[list]] = mapped_column(JSON)  # 相关角色
+    related_plots: Mapped[Optional[list]] = mapped_column(JSON)  # 相关剧情线
+    related_foreshadowings: Mapped[Optional[list]] = mapped_column(JSON)  # 相关伏笔（伏笔链）
+    
+    # 重要性
+    importance: Mapped[Optional[str]] = mapped_column(String(32))  # major/minor/subtle
+    urgency: Mapped[Optional[int]] = mapped_column(Integer)  # 紧迫度 1-10
     
     # 元数据
     is_manual: Mapped[bool] = mapped_column(default=False)
@@ -105,6 +120,26 @@ class ForeshadowingReminder(Base):
     
     # 关系
     foreshadowing: Mapped[Foreshadowing] = relationship(back_populates="reminders")
+
+
+class ForeshadowingStatusHistory(Base):
+    """伏笔状态变更历史"""
+    
+    __tablename__ = "foreshadowing_status_history"
+    
+    id: Mapped[int] = mapped_column(BIGINT_PK_TYPE, primary_key=True, autoincrement=True)
+    foreshadowing_id: Mapped[int] = mapped_column(ForeignKey("foreshadowings.id", ondelete="CASCADE"), nullable=False)
+    
+    # 变更内容
+    old_status: Mapped[Optional[str]] = mapped_column(String(32))
+    new_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    
+    # 变更上下文
+    chapter_number: Mapped[Optional[int]] = mapped_column(Integer)  # 发生在哪一章
+    reason: Mapped[Optional[str]] = mapped_column(Text)  # 变更原因
+    action_taken: Mapped[Optional[str]] = mapped_column(Text)  # 采取的行动
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class ForeshadowingAnalysis(Base):
