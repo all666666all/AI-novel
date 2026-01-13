@@ -144,6 +144,9 @@ class ChapterOutline(Base):
     chapter_number: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     summary: Mapped[Optional[str]] = mapped_column(Text)
+    narrative_phase: Mapped[Optional[str]] = mapped_column(String(64))
+    foreshadowing: Mapped[Optional[dict]] = mapped_column(JSON)
+    emotion_hook: Mapped[Optional[str]] = mapped_column(Text)
 
     project: Mapped[NovelProject] = relationship(back_populates="outlines")
 

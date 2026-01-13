@@ -52,6 +52,9 @@ class ChapterOutline(BaseModel):
     chapter_number: int
     title: str
     summary: str
+    narrative_phase: Optional[str] = None
+    foreshadowing: Optional[Dict[str, List[str]]] = None
+    emotion_hook: Optional[str] = None
 
 
 class Chapter(ChapterOutline):
@@ -149,6 +152,9 @@ class UpdateChapterOutlineRequest(BaseModel):
     chapter_number: int
     title: str
     summary: str
+    narrative_phase: Optional[str] = None
+    foreshadowing: Optional[Dict[str, List[str]]] = None
+    emotion_hook: Optional[str] = None
 
 
 class DeleteChapterRequest(BaseModel):

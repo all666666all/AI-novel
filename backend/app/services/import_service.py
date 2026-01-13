@@ -128,7 +128,10 @@ class ImportService:
                     outline = ChapterOutlineSchema(
                         chapter_number=i,
                         title=chap_title,
-                        summary=""
+                        summary="",
+                        narrative_phase=None,
+                        foreshadowing=None,
+                        emotion_hook=None,
                     )
                 final_outlines.append(outline)
             blueprint_data.chapter_outline = final_outlines
