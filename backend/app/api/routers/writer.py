@@ -476,6 +476,9 @@ async def update_chapter_outline(
 
     outline.title = request.title
     outline.summary = request.summary
+    outline.narrative_phase = request.narrative_phase
+    outline.foreshadowing = request.foreshadowing
+    outline.emotion_hook = request.emotion_hook
     await session.commit()
 
     return await _load_project_schema(novel_service, project_id, current_user.id)
