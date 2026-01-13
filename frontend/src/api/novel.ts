@@ -88,6 +88,12 @@ export interface ChapterOutline {
   chapter_number: number
   title: string
   summary: string
+  narrative_phase?: string
+  foreshadowing?: {
+    plant?: string[]
+    payoff?: string[]
+  }
+  emotion_hook?: string
 }
 
 export interface ChapterVersion {
