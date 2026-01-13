@@ -50,6 +50,14 @@ def _extract_tail_excerpt(text: Optional[str], limit: int = 500) -> str:
     return stripped[-limit:]
 
 
+async def _resolve_writer_prompt_name(session: AsyncSession) -> str:
+    repo = SystemConfigRepository(session)
+    record = await repo.get_by_key("writer.prompt_name")
+    if record and record.value and record.value.strip():
+        return record.value.strip()
+    return settings.writer_prompt_name or "writing"
+
+
 @router.post("/novels/{project_id}/chapters/generate", response_model=NovelProjectSchema)
 async def generate_chapter(
     project_id: str,
@@ -130,10 +138,18 @@ async def generate_chapter(
         if key in blueprint_dict:
             blueprint_dict.pop(key, None)
 
-    writer_prompt = await prompt_service.get_prompt("writing")
+    prompt_name = await _resolve_writer_prompt_name(session)
+    writer_prompt = await prompt_service.get_prompt(prompt_name)
+    if not writer_prompt and prompt_name != "writing":
+        logger.warning("未找到名为 '%s' 的写作提示词，尝试回退到 'writing'", prompt_name)
+        prompt_name = "writing"
+        writer_prompt = await prompt_service.get_prompt(prompt_name)
     if not writer_prompt:
-        logger.error("未配置名为 'writing' 的写作提示词，无法生成章节内容")
-        raise HTTPException(status_code=500, detail="缺少写作提示词，请联系管理员配置 'writing' 提示词")
+        logger.error("未配置名为 '%s' 的写作提示词，无法生成章节内容", prompt_name)
+        raise HTTPException(
+            status_code=500,
+            detail=f"缺少写作提示词，请联系管理员配置 '{prompt_name}' 提示词",
+        )
 
     # 初始化向量检索服务，若未配置则自动降级为纯提示词生成
     vector_store: Optional[VectorStoreService]
@@ -194,7 +210,7 @@ async def generate_chapter(
         ),
     ]
     prompt_input = "\n\n".join(f"{title}\n{content}" for title, content in prompt_sections if content)
-    logger.debug("章节写作提示词：%s\n%s", writer_prompt, prompt_input)
+    logger.debug("章节写作提示词[%s]：%s\n%s", prompt_name, writer_prompt, prompt_input)
     
     async def _generate_single_version(idx: int) -> Dict:
         try:

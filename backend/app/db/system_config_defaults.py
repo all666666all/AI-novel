@@ -109,6 +109,11 @@ SYSTEM_CONFIG_DEFAULTS: list[SystemConfigDefault] = [
         description="每次生成章节的候选版本数量。",
     ),
     SystemConfigDefault(
+        key="writer.prompt_name",
+        value_getter=lambda config: config.writer_prompt_name,
+        description="写作提示词名称，用于选择章节生成的系统提示词模板。",
+    ),
+    SystemConfigDefault(
         key="embedding.provider",
         value_getter=lambda config: config.embedding_provider,
         description="嵌入模型提供方，支持 openai 或 ollama。",
