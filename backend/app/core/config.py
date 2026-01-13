@@ -78,6 +78,11 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("WRITER_CHAPTER_VERSION_COUNT", "WRITER_CHAPTER_VERSIONS"),
         description="每次生成章节的候选版本数量",
     )
+    writer_prompt_name: str = Field(
+        default="writing",
+        env="WRITER_PROMPT_NAME",
+        description="写作提示词名称，用于选择章节生成的系统提示词模板",
+    )
     embedding_provider: str = Field(
         default="openai",
         env="EMBEDDING_PROVIDER",
