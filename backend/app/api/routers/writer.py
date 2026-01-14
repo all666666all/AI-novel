@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from ...core.config import settings
 from ...core.dependencies import get_current_user
-from ...db.session import get_session
+from ...db.session import get_session, AsyncSessionLocal
 from ...models.novel import Chapter, ChapterOutline, ChapterVersion
 from ...schemas.novel import (
     Chapter as ChapterSchema,
@@ -88,6 +88,47 @@ async def _append_manual_version(
         payload={"note": "manual edit"},
     )
     return version
+
+
+async def _refresh_edit_summary_and_ingest(
+    project_id: str,
+    chapter_number: int,
+    content: str,
+    user_id: int,
+) -> None:
+    """
+    Background task to refresh chapter summary and re-ingest to vector store
+    after a manual edit.
+    """
+    async with AsyncSessionLocal() as session:
+        try:
+            if settings.vector_store_enabled:
+                try:
+                    llm_service = LLMService(session)
+                    ingest_service = ChapterIngestionService(llm_service=llm_service)
+
+                    novel_service = NovelService(session)
+                    chapter = await novel_service.get_chapter(project_id, chapter_number)
+
+                    if chapter:
+                        title = chapter.title or f"第{chapter_number}章"
+                        await ingest_service.ingest_chapter(
+                            project_id=project_id,
+                            chapter_number=chapter_number,
+                            title=title,
+                            content=content,
+                            summary=None,
+                        )
+                        logger.info(
+                            "Background: Ingested chapter %s for project %s",
+                            chapter_number,
+                            project_id,
+                        )
+                except Exception as ex:
+                    logger.error("Background ingestion failed: %s", ex)
+        except Exception as e:
+            logger.error("Error in background task _refresh_edit_summary_and_ingest: %s", e)
+
 
 
 @router.post("/advanced/generate", response_model=AdvancedGenerateResponse)
@@ -614,6 +655,7 @@ async def edit_chapter_content_fast(
     chapter.status = ChapterGenerationStatus.SUCCESSFUL.value
     chapter.word_count = len(new_version.content or "")
     await session.commit()
+    await session.refresh(chapter)
 
     background_tasks.add_task(
         _refresh_edit_summary_and_ingest,
