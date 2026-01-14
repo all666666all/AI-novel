@@ -170,6 +170,7 @@ class NovelService:
             genre = blueprint.genre if blueprint and blueprint.genre else "未知"
             outlines = project.outlines
             chapters = project.chapters
+            characters = project.characters
             total = len(outlines) or len(chapters)
             completed = sum(1 for chapter in chapters if chapter.selected_version_id)
             summaries.append(
@@ -180,6 +181,8 @@ class NovelService:
                     last_edited=project.updated_at.isoformat() if project.updated_at else "未知",
                     completed_chapters=completed,
                     total_chapters=total,
+                    cover_url=project.cover_url,
+                    character_count=len(characters),
                 )
             )
         return summaries

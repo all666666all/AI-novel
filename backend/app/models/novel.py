@@ -39,6 +39,7 @@ class NovelProject(Base):
     status: Mapped[str] = mapped_column(String(32), default="draft")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    cover_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
 
     owner: Mapped["User"] = relationship("User", back_populates="novel_projects")
     blueprint: Mapped[Optional["NovelBlueprint"]] = relationship(

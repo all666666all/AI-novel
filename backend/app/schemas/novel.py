@@ -105,6 +105,8 @@ class NovelProjectSummary(BaseModel):
     last_edited: str
     completed_chapters: int
     total_chapters: int
+    cover_url: Optional[str] = None
+    character_count: int = 0
 
 
 class BlueprintGenerationResponse(BaseModel):
